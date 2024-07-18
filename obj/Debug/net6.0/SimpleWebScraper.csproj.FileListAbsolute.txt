@@ -16,3 +16,4 @@
 /Users/yankie/Projects/SimpleWebScraper/obj/Debug/net6.0/SimpleWebScraper.genruntimeconfig.cache
 /Users/yankie/Projects/SimpleWebScraper/obj/Debug/net6.0/ref/SimpleWebScraper.dll
 /Users/yankie/Projects/SimpleWebScraper/obj/Debug/net6.0/SimpleWe.DFD7EC54.Up2Date
+/Users/yankie/Projects/SimpleWebScraper/bin/Debug/net6.0/CsvHelper.dll

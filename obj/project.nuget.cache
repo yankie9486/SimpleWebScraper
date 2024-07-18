@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "guCWvDrcafw=",
+  "dgSpecHash": "Rklq4Qn1vvg=",
   "success": true,
   "projectFilePath": "/Users/yankie/Projects/SimpleWebScraper/SimpleWebScraper.csproj",
   "expectedPackageFiles": [
+    "/Users/yankie/.nuget/packages/csvhelper/33.0.1/csvhelper.33.0.1.nupkg.sha512",
     "/Users/yankie/.nuget/packages/htmlagilitypack/1.11.61/htmlagilitypack.1.11.61.nupkg.sha512",
     "/Users/yankie/.nuget/packages/htmlagilitypack.cssselectors/1.0.2/htmlagilitypack.cssselectors.1.0.2.nupkg.sha512"
   ],
