@@ -12,20 +12,57 @@ class Program
     private static readonly HttpClient _client = new HttpClient();
     private static List<CompanyListing> _companyListings = new List<CompanyListing>();
 
+    private static bool isEmailEnabled = false;
+
     static async Task Main(string[] args)
     {
-        await StartScrape();
-        // ExportToCsv("company_listings.csv");
+        Console.WriteLine("Enter search Term:");
+        string? searchTerm = Console.ReadLine();
+
+        Console.WriteLine("Enter Location:");
+        string geoLocation = Console.ReadLine().Replace(" ", "%20");
+
+        Console.WriteLine("Do you want the list exported to a CSV?");
+        Console.WriteLine("y/n");
+
+        string? exportCSV = Console.ReadLine();
+
+        if(!string.IsNullOrWhiteSpace(exportCSV))
+        {
+            if(exportCSV == "y" || exportCSV == "Y")
+            {
+                isEmailEnabled = true;
+            }
+            else
+            {
+                isEmailEnabled = false;
+            }
+        }else{
+            isEmailEnabled = false;
+        }
+
+        if( !string.IsNullOrWhiteSpace(searchTerm) && !string.IsNullOrWhiteSpace(geoLocation) )
+        {
+            await StartScrape(searchTerm, geoLocation);
+        }
+        else
+        {
+            Console.WriteLine("Can not search without searh term and geo location");
+        }
+
+        ExportToCsv("company_listings.csv");
     }
 
-    static async Task StartScrape()
+    static async Task StartScrape(string searchTerm, string geoLocation)
     {
-        String searchTerm = "Electricians";
-        String geoLocation = "Haines%20City%2C%20FL";
         int pageIndex = 1;
 
         try
         {
+            Console.WriteLine("");
+            Console.WriteLine("Starting");
+            Console.WriteLine("-------------------------------");
+            Console.WriteLine("");
             string responseBody = await GetWebpage(searchTerm, geoLocation, pageIndex);
 
             HtmlDocument htmlDoc = new HtmlDocument();
@@ -47,7 +84,7 @@ class Program
 
                     if (spanNode != null)
                     {
-                        // Console.WriteLine("Found <span>: " + int.Parse(spanNode.InnerText));
+                        //Not adding span because it has one and we have it.
                     }
 
                     if (aNode != null)
@@ -55,7 +92,6 @@ class Program
                         if (aNode.InnerText != "Next")
                         {
                             pageCount.Add(int.Parse(aNode.InnerText));
-                            Console.WriteLine("Found <a>: " + int.Parse(aNode.InnerText));
                         }
                     }
                 }
@@ -70,10 +106,13 @@ class Program
             int postCount = int.Parse(countText);
 
             Console.WriteLine($"Total Count: {postCount}");
+            Console.WriteLine($"Total Pages to Search: {pageCount.Last()}");
+            Console.WriteLine("-------------------------------");
+            Console.WriteLine("");
 
             var result = scrollNode.SelectNodes(".//div[contains(@class, 'result')]");
 
-            CreateCompanyListFromHtmlNode(result);
+            await CreateCompanyListFromHtmlNode(result);
 
             foreach (var pageId in pageCount)
             {
@@ -83,15 +122,12 @@ class Program
                 htmlDocOther.LoadHtml(respBody);
                 HtmlNode scrollNodeOther = htmlDocOther.DocumentNode.SelectSingleNode("//div[@class='scrollable-pane']");
                 var otherResult = scrollNodeOther.SelectNodes(".//div[contains(@class, 'result')]");
-                CreateCompanyListFromHtmlNode(otherResult);
+                await CreateCompanyListFromHtmlNode(otherResult);
             }
 
             foreach (var item in _companyListings)
             {
-                Console.WriteLine($"Name: {item.Name}");
-                Console.WriteLine($"Phone: {item.PhoneNumber}");
-                Console.WriteLine($"Email: {item.Email}");
-                Console.WriteLine($"Website: {item.Website}");
+                Console.WriteLine(item.ToString());
                 Console.WriteLine("-------------------------------");
                 Console.WriteLine("");
             }
@@ -101,6 +137,15 @@ class Program
             Console.WriteLine("\nException Caught!");
             Console.WriteLine("Message :{0} ", e.Message);
         }
+    }
+
+    static async Task<string> GetCompanyWebpage(String route)
+    {
+        String input = $"https://www.yellowpages.com{route}";
+        using HttpResponseMessage response = await _client.GetAsync(input);
+        response.EnsureSuccessStatusCode();
+        string responseBody = await response.Content.ReadAsStringAsync();
+        return responseBody;
     }
 
     static async Task<string> GetWebpage(String searchTerm, String geoLocation, int pageIndex)
@@ -119,7 +164,7 @@ class Program
         return match.Success ? match.Groups[1].Value : "";
     }
 
-    public static void CreateCompanyListFromHtmlNode(HtmlNodeCollection companyListing)
+    static async Task CreateCompanyListFromHtmlNode(HtmlNodeCollection companyListing)
     {
         if (companyListing != null)
         {
@@ -127,17 +172,41 @@ class Program
             {
                 var nameNode = result.SelectSingleNode(".//h2");
                 var numberNode = result.SelectSingleNode(".//div[contains(@class, 'phone') and contains(@class, 'primary')]");
+                var addressNode = result.SelectSingleNode(".//div[contains(@class, 'adr')]");
                 var websiteNode = result.SelectSingleNode(".//a[contains(@class, 'track-visit-website')]");
+                var ypUrlNode = result.SelectSingleNode(".//a[@href]");
 
                 var name = nameNode != null ? HtmlEntity.DeEntitize(nameNode.InnerText.Trim()) : "N/A";
                 string pattern = @"[\d\.]";
                 string nameClean = Regex.Replace(name, pattern, string.Empty);
 
                 var number = numberNode != null ? HtmlEntity.DeEntitize(numberNode.InnerText.Trim()) : "N/A";
+                var address = addressNode != null ? HtmlEntity.DeEntitize(addressNode.InnerText.Trim()) : "N/A";
                 var website = websiteNode != null ? HtmlEntity.DeEntitize(websiteNode.GetAttributeValue("href", "N/A")) : "N/A";
-                var email = "N/A";
 
-                CompanyListing company = new CompanyListing(nameClean.Trim(), number, email, website);
+                var ypUrl = ypUrlNode != null ? ypUrlNode.GetAttributeValue("href", "N/A") : "N/A";
+                var email = "";
+                isEmailEnabled = true;
+
+                if (ypUrl != "N/A" && isEmailEnabled)
+                {
+                    try
+                    {
+                        string responseBody = await GetCompanyWebpage(ypUrl);
+                        HtmlDocument htmlDoc = new HtmlDocument();
+                        htmlDoc.LoadHtml(responseBody);
+                        HtmlNode emailNode = htmlDoc.DocumentNode.SelectSingleNode(".//a[@class='email-business']");
+                        string mailto = emailNode != null ? emailNode.GetAttributeValue("href", "N/A") : "N/A";
+                        email = Regex.Replace(mailto, @"^mailto:", string.Empty);
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        Console.WriteLine("\nException Caught!");
+                        Console.WriteLine("Message :{0} ", e.Message);
+                    }
+                }
+
+                CompanyListing company = new CompanyListing(nameClean.Trim(), number, email, address, website, ypUrl);
 
                 _companyListings.Add(company);
             }
