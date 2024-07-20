@@ -27,9 +27,13 @@ class Program
 
         string? exportCSV = Console.ReadLine();
 
-        if(!string.IsNullOrWhiteSpace(exportCSV))
+        if (!string.IsNullOrWhiteSpace(exportCSV))
         {
-            if(exportCSV == "y" || exportCSV == "Y")
+            if (exportCSV == "y" || exportCSV == "Y")
+            {
+                isEmailEnabled = true;
+            }
+            else if (exportCSV == "yes" || exportCSV == "Yes")
             {
                 isEmailEnabled = true;
             }
@@ -37,11 +41,13 @@ class Program
             {
                 isEmailEnabled = false;
             }
-        }else{
+        }
+        else
+        {
             isEmailEnabled = false;
         }
 
-        if( !string.IsNullOrWhiteSpace(searchTerm) && !string.IsNullOrWhiteSpace(geoLocation) )
+        if (!string.IsNullOrWhiteSpace(searchTerm) && !string.IsNullOrWhiteSpace(geoLocation))
         {
             await StartScrape(searchTerm, geoLocation);
         }
@@ -125,11 +131,15 @@ class Program
                 await CreateCompanyListFromHtmlNode(otherResult);
             }
 
-            foreach (var item in _companyListings)
+            if (!isEmailEnabled)
             {
-                Console.WriteLine(item.ToString());
-                Console.WriteLine("-------------------------------");
-                Console.WriteLine("");
+
+                foreach (var item in _companyListings)
+                {
+                    Console.WriteLine(item.ToString());
+                    Console.WriteLine("-------------------------------");
+                    Console.WriteLine("");
+                }
             }
         }
         catch (HttpRequestException e)
