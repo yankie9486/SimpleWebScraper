@@ -61,7 +61,7 @@ class Program
 
     static async Task StartScrape(string searchTerm, string geoLocation)
     {
-        int pageIndex = 1;
+
 
         try
         {
@@ -69,60 +69,63 @@ class Program
             Console.WriteLine("Starting");
             Console.WriteLine("-------------------------------");
             Console.WriteLine("");
-            string responseBody = await GetWebpage(searchTerm, geoLocation, pageIndex);
+            int pageStart = 1;
+            string responseBody = await GetWebpage(searchTerm, geoLocation, pageStart);
 
             HtmlDocument htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(responseBody);
             HtmlNode scrollNode = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='scrollable-pane']");
             HtmlNode getShowCount = scrollNode.SelectSingleNode(".//span[contains(@class,'showing-count')]");
 
-            HtmlNode getPagination = scrollNode.SelectSingleNode(".//div[contains(@class,'pagination')]");
-            var paginations = getPagination.SelectNodes(".//li[span or a]");
+            // HtmlNode getPagination = scrollNode.SelectSingleNode(".//div[contains(@class,'pagination')]");
+            // var paginations = getPagination.SelectNodes(".//li[span or a]");
 
-            List<int> pageCount = new List<int>();
+            // List<int> pageCount = new List<int>();
 
-            if (paginations != null)
-            {
-                foreach (var pagination in paginations)
-                {
-                    HtmlNode spanNode = pagination.SelectSingleNode(".//span");
-                    HtmlNode aNode = pagination.SelectSingleNode(".//a");
+            // if (paginations != null)
+            // {
+            //     foreach (var pagination in paginations)
+            //     {
+            //         HtmlNode spanNode = pagination.SelectSingleNode(".//span");
+            //         HtmlNode aNode = pagination.SelectSingleNode(".//a");
 
-                    if (spanNode != null)
-                    {
-                        //Not adding span because it has one and we have it.
-                    }
+            //         if (spanNode != null)
+            //         {
+            //             //Not adding span because it has one and we have it.
+            //         }
 
-                    if (aNode != null)
-                    {
-                        if (aNode.InnerText != "Next")
-                        {
-                            pageCount.Add(int.Parse(aNode.InnerText));
-                        }
-                    }
-                }
-            }
-            else
-            {
-                Console.WriteLine("No pagination <li> tags found.");
-            }
+            //         if (aNode != null)
+            //         {
+            //             if (aNode.InnerText != "Next")
+            //             {
+            //                 pageCount.Add(int.Parse(aNode.InnerText));
+            //             }
+            //         }
+            //     }
+            // }
+            // else
+            // {
+            //     Console.WriteLine("No pagination <li> tags found.");
+            // }
 
             String getCountText = getShowCount != null ? HtmlEntity.DeEntitize(getShowCount.InnerText.Trim()) : "N/A";
             String countText = StripTotalCountText(getCountText);
+            int postPerPage = 30;
             int postCount = int.Parse(countText);
+            int pageCount = postCount/postPerPage;
 
             Console.WriteLine($"Total Count: {postCount}");
-            Console.WriteLine($"Total Pages to Search: {pageCount.Last()}");
+            Console.WriteLine($"Total Pages to Search: {pageCount}");
             Console.WriteLine("-------------------------------");
             Console.WriteLine("");
 
             var result = scrollNode.SelectNodes(".//div[contains(@class, 'result')]");
 
             await CreateCompanyListFromHtmlNode(result);
-
-            foreach (var pageId in pageCount)
+            //Start at page 2 because we have page 1
+            for (var pageIndex = 2;pageIndex <= pageCount; pageIndex++)
             {
-                pageIndex = pageId;
+                Console.WriteLine($"pageIndex: {pageIndex}");
                 string respBody = await GetWebpage(searchTerm, geoLocation, pageIndex);
                 HtmlDocument htmlDocOther = new HtmlDocument();
                 htmlDocOther.LoadHtml(respBody);
@@ -190,6 +193,11 @@ class Program
                 string pattern = @"[\d\.]";
                 string nameClean = Regex.Replace(name, pattern, string.Empty);
 
+                if(nameClean.Trim() == "N/A")
+                {
+                    continue;
+                }
+
                 var number = numberNode != null ? HtmlEntity.DeEntitize(numberNode.InnerText.Trim()) : "N/A";
                 var address = addressNode != null ? HtmlEntity.DeEntitize(addressNode.InnerText.Trim()) : "N/A";
                 var website = websiteNode != null ? HtmlEntity.DeEntitize(websiteNode.GetAttributeValue("href", "N/A")) : "N/A";
@@ -220,6 +228,12 @@ class Program
 
                 _companyListings.Add(company);
             }
+
+            _companyListings = _companyListings
+            .Where(c => c.Name != "N/A")
+            .OrderBy(c => c.Name)
+            .ToList();
+
         }
         else
         {
