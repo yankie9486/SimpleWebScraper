@@ -20,7 +20,7 @@ class Program
         string? searchTerm = Console.ReadLine();
 
         Console.WriteLine("Enter Location:");
-        string geoLocation = Console.ReadLine().Replace(" ", "%20");
+        string? geoLocation = Console.ReadLine();
 
         Console.WriteLine("Do you want the list exported to a CSV?");
         Console.WriteLine("y/n");
@@ -49,14 +49,16 @@ class Program
 
         if (!string.IsNullOrWhiteSpace(searchTerm) && !string.IsNullOrWhiteSpace(geoLocation))
         {
+            geoLocation.Replace(" ", "%20");
             await StartScrape(searchTerm, geoLocation);
+            ExportToCsv("company_listings.csv");
         }
         else
         {
             Console.WriteLine("Can not search without searh term and geo location");
         }
 
-        ExportToCsv("company_listings.csv");
+        
     }
 
     static async Task StartScrape(string searchTerm, string geoLocation)
@@ -75,44 +77,18 @@ class Program
             HtmlDocument htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(responseBody);
             HtmlNode scrollNode = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='scrollable-pane']");
+
             HtmlNode getShowCount = scrollNode.SelectSingleNode(".//span[contains(@class,'showing-count')]");
-
-            // HtmlNode getPagination = scrollNode.SelectSingleNode(".//div[contains(@class,'pagination')]");
-            // var paginations = getPagination.SelectNodes(".//li[span or a]");
-
-            // List<int> pageCount = new List<int>();
-
-            // if (paginations != null)
-            // {
-            //     foreach (var pagination in paginations)
-            //     {
-            //         HtmlNode spanNode = pagination.SelectSingleNode(".//span");
-            //         HtmlNode aNode = pagination.SelectSingleNode(".//a");
-
-            //         if (spanNode != null)
-            //         {
-            //             //Not adding span because it has one and we have it.
-            //         }
-
-            //         if (aNode != null)
-            //         {
-            //             if (aNode.InnerText != "Next")
-            //             {
-            //                 pageCount.Add(int.Parse(aNode.InnerText));
-            //             }
-            //         }
-            //     }
-            // }
-            // else
-            // {
-            //     Console.WriteLine("No pagination <li> tags found.");
-            // }
-
             String getCountText = getShowCount != null ? HtmlEntity.DeEntitize(getShowCount.InnerText.Trim()) : "N/A";
             String countText = StripTotalCountText(getCountText);
+            //set as yp only return 30 post a page.
             int postPerPage = 30;
             int postCount = int.Parse(countText);
-            int pageCount = postCount/postPerPage;
+
+            //Round up to get the last page post
+            float pc = postCount/postPerPage;
+            Console.WriteLine($"postCountDec: {pc}");
+            int pageCount = (int)Math.Ceiling( pc );
 
             Console.WriteLine($"Total Count: {postCount}");
             Console.WriteLine($"Total Pages to Search: {pageCount}");
