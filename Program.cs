@@ -23,20 +23,25 @@ class Program
         _isEmailEnabled = GetYesOrNoInput("Do you want to include Emails in list?");
         _isExportEnabled = GetYesOrNoInput("Do you want the list exported to a CSV?");
 
-        string csvFileName = "company_listings.csv" ;
+        string csvFileName = "" ;
 
         if(_isExportEnabled)
         {
+            string userDirectory = GetUserDirectory();
+            string csvDirectoryInput = GetInput($"Export Directory: (default: {userDirectory}/)");
             string csvFileNameInput = GetInput("Exported File Name: (default name: company_listing)");
-            csvFileName = !string.IsNullOrEmpty(csvFileNameInput) ? $"{csvFileNameInput}.csv": "company_listings.csv";
+            csvFileName = !string.IsNullOrEmpty(csvFileNameInput) ? $"{csvDirectoryInput}/{csvFileNameInput}.csv": $"{csvDirectoryInput}/company_listings.csv";
         }
-
 
         if (!string.IsNullOrWhiteSpace(searchTerm) && !string.IsNullOrWhiteSpace(geoLocation))
         {
             geoLocation.Replace(" ", "%20");
             await StartScrape(searchTerm, geoLocation);
-            ExportToCsv(csvFileName);
+
+            if(_isExportEnabled )
+            {
+                ExportToCsv(csvFileName);
+            }
         }
         else
         {
@@ -70,7 +75,6 @@ class Program
             htmlDoc.LoadHtml(responseBody);
             HtmlNode scrollNode = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='scrollable-pane']");
 
-
             HtmlNode getShowCount = scrollNode.SelectSingleNode(".//span[contains(@class,'showing-count')]");
             String getCountText = getShowCount != null ? HtmlEntity.DeEntitize(getShowCount.InnerText.Trim()) : "N/A";
             String countText = StripTotalCountText(getCountText);
@@ -83,7 +87,6 @@ class Program
             Console.WriteLine($"Total Count: {postCount}");
             Console.WriteLine($"Total Pages to Search: {pageCount}");
             Console.WriteLine("\n-------------------------------\n");
-            Console.WriteLine("");
 
             var result = scrollNode.SelectNodes(".//div[contains(@class, 'result')]");
 
@@ -203,10 +206,7 @@ class Program
         using (var writer = new StreamWriter(filePath))
         using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
         {
-            if(_isExportEnabled )
-            {
-                csv.WriteRecords(_companyListings);
-            }
+            csv.WriteRecords(_companyListings);
         }
     }
 
@@ -219,5 +219,10 @@ class Program
         }
         Console.WriteLine($"Post Count Decemial: {result}");
         return (int)result;
+    }
+
+    static string GetUserDirectory()
+    {
+        return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     }
 }
