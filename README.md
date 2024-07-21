@@ -13,3 +13,6 @@ export to a csv. a prompt will ask for directory and name of file. if not, will 
 
 ###Publish in mac os
 `dotnet publish -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish`
+
+###Symbolic link
+`ln -sf /Users/yankie/Projects/SimpleWebScraper/publish/SimpleWebScraper /usr/local/bin/SimpleWebScraper`
