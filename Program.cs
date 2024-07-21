@@ -94,7 +94,7 @@ class Program
             //Start at page 2 because we have page 1
             for (var pageIndex = 2;pageIndex <= pageCount; pageIndex++)
             {
-                Console.WriteLine($"pageIndex: {pageIndex}");
+                Console.WriteLine($"Searching page: {pageIndex}");
                 string respBody = await GetWebpage(searchTerm, geoLocation, pageIndex);
                 HtmlDocument htmlDocOther = new HtmlDocument();
                 htmlDocOther.LoadHtml(respBody);
@@ -217,7 +217,6 @@ class Program
         {
             result += Math.Pow(10, -decimalPoint);
         }
-        Console.WriteLine($"Post Count Decemial: {result}");
         return (int)result;
     }
 

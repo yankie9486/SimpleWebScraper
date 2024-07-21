@@ -6,4 +6,4 @@ Debug/
 Release/
 *.log
 .vs/
-*.csv
+publish
