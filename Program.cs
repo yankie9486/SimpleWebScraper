@@ -23,11 +23,22 @@ class Program
         _isEmailEnabled = GetYesOrNoInput("Do you want to include Emails in list?");
         _isExportEnabled = GetYesOrNoInput("Do you want the list exported to a CSV?");
 
+        // string csvFileName = (_isExportEnabled && (GetInput("Exported File Name:") != string.Em)) ? $"{GetInput("Exported File Name:")}: "company_listings.csv";
+        string csvFileNameInput = GetInput("Exported File Name:");
+
+        string csvFileName = "company_listings.csv" ;
+
+        if(_isExportEnabled && !string.IsNullOrEmpty(csvFileNameInput))
+        {
+            csvFileName = $"{csvFileNameInput}.csv";
+        }
+
+
         if (!string.IsNullOrWhiteSpace(searchTerm) && !string.IsNullOrWhiteSpace(geoLocation))
         {
             geoLocation.Replace(" ", "%20");
             await StartScrape(searchTerm, geoLocation);
-            ExportToCsv("company_listings.csv");
+            ExportToCsv(csvFileName);
         }
         else
         {
