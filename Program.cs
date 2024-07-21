@@ -23,14 +23,12 @@ class Program
         _isEmailEnabled = GetYesOrNoInput("Do you want to include Emails in list?");
         _isExportEnabled = GetYesOrNoInput("Do you want the list exported to a CSV?");
 
-        // string csvFileName = (_isExportEnabled && (GetInput("Exported File Name:") != string.Em)) ? $"{GetInput("Exported File Name:")}: "company_listings.csv";
-        string csvFileNameInput = GetInput("Exported File Name:");
-
         string csvFileName = "company_listings.csv" ;
 
-        if(_isExportEnabled && !string.IsNullOrEmpty(csvFileNameInput))
+        if(_isExportEnabled)
         {
-            csvFileName = $"{csvFileNameInput}.csv";
+            string csvFileNameInput = GetInput("Exported File Name: (default name: company_listing)");
+            csvFileName = !string.IsNullOrEmpty(csvFileNameInput) ? $"{csvFileNameInput}.csv": "company_listings.csv";
         }
 
 
@@ -205,7 +203,10 @@ class Program
         using (var writer = new StreamWriter(filePath))
         using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
         {
-            csv.WriteRecords(_companyListings);
+            if(_isExportEnabled )
+            {
+                csv.WriteRecords(_companyListings);
+            }
         }
     }
 
